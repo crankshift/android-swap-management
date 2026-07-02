@@ -1,0 +1,38 @@
+#!/sbin/sh
+OUTFD=$2
+ZIPFILE=$3
+MODID=oneplus15-zram-8gb
+MODPATH=/data/adb/modules/$MODID
+
+ui_print() {
+  if [ -n "$OUTFD" ]; then
+    echo "ui_print $1" >&$OUTFD
+    echo "ui_print" >&$OUTFD
+  else
+    echo "$1"
+  fi
+}
+
+abort() {
+  ui_print "! $1"
+  exit 1
+}
+
+ui_print "- Installing OnePlus 15 ZRAM 8GB"
+ui_print "- Author: crankshift"
+
+[ -d /data/adb/modules ] || abort "/data/adb/modules not found. Install from Magisk or KernelSU Manager."
+
+rm -rf "$MODPATH"
+mkdir -p "$MODPATH" || abort "Failed to create module directory"
+
+unzip -o "$ZIPFILE" 'module.prop' 'skip_mount' 'service.sh' 'uninstall.sh' 'README.md' -d "$MODPATH" >/dev/null || abort "Failed to extract module files"
+
+chmod 0644 "$MODPATH/module.prop" "$MODPATH/skip_mount" "$MODPATH/README.md"
+chmod 0755 "$MODPATH/service.sh" "$MODPATH/uninstall.sh"
+
+ui_print "- ZRAM size: 8192 MiB"
+ui_print "- Compression: lz4 when supported"
+ui_print "- Swappiness: 100"
+ui_print "- Reboot to apply"
+exit 0

@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y zip unzip
+
+      - name: Build module ZIP
+        run: ./scripts/build.sh
+
+      - name: Validate module
+        run: ./tests/validate_module.sh
+
+      - name: Publish GitHub release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          tag="${GITHUB_REF_NAME}"
+          zip_file=$(find dist -maxdepth 1 -name 'oneplus15-zram-8gb-*.zip' -print -quit)
+
+          if [ -z "$zip_file" ]; then
+            echo "No release ZIP found in dist/" >&2
+            exit 1
+          fi
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$zip_file" --clobber
+          else
+            gh release create "$tag" "$zip_file" --title "$tag" --notes "Release $tag" --verify-tag
+          fi
