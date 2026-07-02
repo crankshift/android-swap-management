@@ -60,17 +60,6 @@ Validate the source and generated ZIP:
 ./tests/validate_module.sh
 ```
 
-## Release Process
-
-Releases are built by GitHub Actions when a version tag is pushed.
-
-```sh
-git tag v1.0
-git push origin v1.0
-```
-
-The workflow builds the module ZIP, validates it, and uploads it to the GitHub Release for that tag. Keep `version=` in `oneplus15-zram-8gb/module.prop` aligned with the release tag.
-
 ## Uninstall
 
 Remove the module in Magisk Manager or KernelSU Manager, then reboot.
