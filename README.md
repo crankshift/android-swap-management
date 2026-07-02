@@ -12,7 +12,7 @@ Magisk/KernelSU module that configures `zram0` at boot for an 8 GiB compressed s
 
 ## Compatibility
 
-This module is intended for rooted OnePlus 15 systems with Magisk or KernelSU and an available `zram0` block device. It was written for setups where zram is exposed at `/sys/block/zram0` and the device node exists at `/dev/block/zram0` or `/dev/zram0`.
+This module is intended for rooted OnePlus 15 on Linage based ROM's with Magisk or KernelSU and an available `zram0` block device. It was written for setups where zram is exposed at `/sys/block/zram0` and the device node exists at `/dev/block/zram0` or `/dev/zram0`.
 
 Changing swap and zram settings can affect stability, thermals, and performance. Install at your own risk.
 
