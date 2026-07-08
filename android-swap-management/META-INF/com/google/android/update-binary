@@ -71,11 +71,11 @@ choose_swap_size
 rm -rf "$MODPATH"
 mkdir -p "$MODPATH" || abort "Failed to create module directory"
 
-unzip -o "$ZIPFILE" 'module.prop' 'skip_mount' 'service.sh' 'uninstall.sh' 'README.md' -d "$MODPATH" >/dev/null || abort "Failed to extract module files"
+unzip -o "$ZIPFILE" 'module.prop' 'skip_mount' 'service.sh' 'uninstall.sh' 'README.md' 'webroot/*' -d "$MODPATH" >/dev/null || abort "Failed to extract module files"
 
 printf '%s\n' "$SWAP_SIZE_BYTES" > "$MODPATH/$CONF" || abort "Failed to write swap size config"
 
-chmod 0644 "$MODPATH/module.prop" "$MODPATH/skip_mount" "$MODPATH/README.md" "$MODPATH/$CONF"
+chmod 0644 "$MODPATH/module.prop" "$MODPATH/skip_mount" "$MODPATH/README.md" "$MODPATH/$CONF" "$MODPATH/webroot/index.html"
 chmod 0755 "$MODPATH/service.sh" "$MODPATH/uninstall.sh"
 
 ui_print "- Selected swapfile size: $SWAP_SIZE_LABEL"

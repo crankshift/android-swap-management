@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Android Swap Management</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --text: #17202a;
+      --muted: #667085;
+      --border: #d9dee8;
+      --accent: #087e8b;
+      --accent-strong: #06606a;
+      --warn: #b42318;
+      --ok: #18794e;
+      --shadow: 0 12px 30px rgba(28, 39, 58, 0.10);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #11151c;
+        --panel: #1a202b;
+        --text: #eef2f6;
+        --muted: #aab4c0;
+        --border: #303846;
+        --accent: #38b2ac;
+        --accent-strong: #5ee0d6;
+        --warn: #ff8a80;
+        --ok: #7bd88f;
+        --shadow: none;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    main {
+      width: min(100%, 760px);
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+    }
+
+    header {
+      padding: 6px 2px 2px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.42rem;
+      line-height: 1.2;
+      font-weight: 750;
+    }
+
+    .status-pill {
+      min-width: 82px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .status-pill.active {
+      color: var(--ok);
+      border-color: color-mix(in srgb, var(--ok) 45%, var(--border));
+    }
+
+    .status-pill.error {
+      color: var(--warn);
+      border-color: color-mix(in srgb, var(--warn) 45%, var(--border));
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 6px;
+      overflow-wrap: anywhere;
+      font-size: 1rem;
+      line-height: 1.25;
+    }
+
+    .chooser {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    button {
+      min-height: 48px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 0.96rem;
+      font-weight: 750;
+    }
+
+    button.selected {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      color: var(--accent-strong);
+    }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    button:disabled {
+      opacity: 0.58;
+    }
+
+    .message {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .message.error {
+      color: var(--warn);
+    }
+
+    .details {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 0.98rem;
+      line-height: 1.25;
+    }
+
+    pre {
+      margin: 0;
+      max-height: 220px;
+      overflow: auto;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--bg) 70%, var(--panel));
+      color: var(--text);
+      font-size: 0.78rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 620px) {
+      main {
+        padding: 14px;
+      }
+
+      header,
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .summary,
+      .button-row {
+        grid-template-columns: 1fr;
+      }
+
+      .status-pill {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Android Swap Management</h1>
+      <div id="state" class="status-pill">Checking</div>
+    </header>
+
+    <section class="summary" aria-label="Swap status">
+      <div class="metric">
+        <span>Configured</span>
+        <strong id="configured">-</strong>
+      </div>
+      <div class="metric">
+        <span>Active target</span>
+        <strong id="target">-</strong>
+      </div>
+      <div class="metric">
+        <span>File size</span>
+        <strong id="fileSize">-</strong>
+      </div>
+    </section>
+
+    <section class="chooser" aria-label="Swap size">
+      <div class="button-row">
+        <button type="button" data-size="8589934592">8 GiB</button>
+        <button type="button" data-size="17179869184">16 GiB</button>
+      </div>
+      <button id="apply" class="primary" type="button">Apply</button>
+      <div id="message" class="message" role="status"></div>
+    </section>
+
+    <section class="details" aria-label="System details">
+      <h2>/proc/swaps</h2>
+      <pre id="swaps">Loading...</pre>
+      <h2>Log</h2>
+      <pre id="log">Loading...</pre>
+    </section>
+  </main>
+
+  <script>
+    const moduleDir = "/data/adb/modules/android-swap-management";
+    const confPath = moduleDir + "/swap_size.conf";
+    const servicePath = moduleDir + "/service.sh";
+    const swapfilePath = "/data/local/tmp/swapfile";
+    const logPath = "/data/local/tmp/android-swap-management.log";
+    const sizes = {
+      "8589934592": "8 GiB",
+      "17179869184": "16 GiB"
+    };
+
+    const state = document.getElementById("state");
+    const configured = document.getElementById("configured");
+    const target = document.getElementById("target");
+    const fileSize = document.getElementById("fileSize");
+    const swaps = document.getElementById("swaps");
+    const log = document.getElementById("log");
+    const message = document.getElementById("message");
+    const apply = document.getElementById("apply");
+    const sizeButtons = Array.from(document.querySelectorAll("[data-size]"));
+    let selectedSize = "8589934592";
+
+    function resultText(result) {
+      if (typeof result === "string") return result;
+      if (!result) return "";
+      return result.stdout || "";
+    }
+
+    async function rootExec(command) {
+      if (!window.ksu || typeof window.ksu.exec !== "function") {
+        throw new Error("Root manager WebUI API unavailable");
+      }
+
+      const value = window.ksu.exec(command);
+      const result = value && typeof value.then === "function" ? await value : value;
+      if (result && typeof result.errno === "number" && result.errno !== 0) {
+        throw new Error(result.stderr || result.stdout || "Command failed");
+      }
+      return resultText(result).trim();
+    }
+
+    function shellQuote(value) {
+      return "'" + String(value).replace(/'/g, "'\\''") + "'";
+    }
+
+    function setMessage(text, isError) {
+      message.textContent = text || "";
+      message.classList.toggle("error", Boolean(isError));
+    }
+
+    function sizeLabel(bytes) {
+      return sizes[bytes] || "8 GiB";
+    }
+
+    function bytesLabel(bytes) {
+      const parsed = Number(bytes);
+      if (!Number.isFinite(parsed) || parsed <= 0) return "-";
+      return parsed >= 1073741824
+        ? (parsed / 1073741824).toFixed(1).replace(".0", "") + " GiB"
+        : Math.round(parsed / 1048576) + " MiB";
+    }
+
+    function selectSize(bytes) {
+      selectedSize = sizes[bytes] ? bytes : "8589934592";
+      sizeButtons.forEach((button) => {
+        button.classList.toggle("selected", button.dataset.size === selectedSize);
+      });
+    }
+
+    async function refresh() {
+      setMessage("Refreshing", false);
+
+      const config = await rootExec("cat " + shellQuote(confPath) + " 2>/dev/null || echo 8589934592");
+      const currentFileSize = await rootExec("[ -e " + shellQuote(swapfilePath) + " ] && ls -ln " + shellQuote(swapfilePath) + " | awk '{ print $5 }' || true");
+      const loop = await rootExec("command -v losetup >/dev/null 2>&1 && losetup -j " + shellQuote(swapfilePath) + " 2>/dev/null | awk -F: 'NR == 1 { print $1; exit }' || true");
+      const procSwaps = await rootExec("cat /proc/swaps 2>/dev/null || true");
+      const tailLog = await rootExec("tail -n 32 " + shellQuote(logPath) + " 2>/dev/null || true");
+
+      const activeTarget = procSwaps.includes(swapfilePath) ? swapfilePath : loop && procSwaps.includes(loop) ? loop : "";
+
+      selectSize(config);
+      configured.textContent = sizeLabel(selectedSize);
+      target.textContent = activeTarget || "Inactive";
+      fileSize.textContent = bytesLabel(currentFileSize);
+      swaps.textContent = procSwaps || "No active swap entries";
+      log.textContent = tailLog || "No log yet";
+
+      state.textContent = activeTarget ? "Active" : "Inactive";
+      state.classList.toggle("active", Boolean(activeTarget));
+      state.classList.toggle("error", !activeTarget);
+      setMessage("", false);
+    }
+
+    async function applySelection() {
+      apply.disabled = true;
+      sizeButtons.forEach((button) => button.disabled = true);
+      setMessage("Applying " + sizeLabel(selectedSize), false);
+
+      try {
+        await rootExec("printf '%s\\n' " + shellQuote(selectedSize) + " > " + shellQuote(confPath) + " && chmod 0644 " + shellQuote(confPath) + " && " + shellQuote(servicePath));
+        await refresh();
+        setMessage("Applied " + sizeLabel(selectedSize), false);
+      } catch (error) {
+        setMessage(error.message || "Apply failed", true);
+        state.textContent = "Error";
+        state.classList.remove("active");
+        state.classList.add("error");
+      } finally {
+        apply.disabled = false;
+        sizeButtons.forEach((button) => button.disabled = false);
+      }
+    }
+
+    sizeButtons.forEach((button) => {
+      button.addEventListener("click", () => selectSize(button.dataset.size));
+    });
+    apply.addEventListener("click", applySelection);
+    refresh().catch((error) => {
+      swaps.textContent = "Unavailable";
+      log.textContent = "Unavailable";
+      setMessage(error.message || "WebUI unavailable", true);
+      state.textContent = "Error";
+      state.classList.add("error");
+    });
+  </script>
+</body>
+</html>

@@ -49,9 +49,65 @@ file_size_bytes() {
   ls -ln "$SWAPFILE" 2>/dev/null | awk '{ print $5 }'
 }
 
-swap_is_active() {
+loop_for_swapfile() {
+  command -v losetup >/dev/null 2>&1 || return 1
+  losetup -j "$SWAPFILE" 2>/dev/null | awk -F: 'NR == 1 { print $1; exit }'
+}
+
+swap_target_for_swapfile() {
   [ -r /proc/swaps ] || return 1
-  awk -v path="$SWAPFILE" '$1 == path { found = 1 } END { exit found ? 0 : 1 }' /proc/swaps
+
+  if awk -v path="$SWAPFILE" '$1 == path { found = 1 } END { exit found ? 0 : 1 }' /proc/swaps; then
+    printf '%s\n' "$SWAPFILE"
+    return 0
+  fi
+
+  loop=$(loop_for_swapfile || true)
+  [ -n "$loop" ] || return 1
+
+  if awk -v path="$loop" '$1 == path { found = 1 } END { exit found ? 0 : 1 }' /proc/swaps; then
+    printf '%s\n' "$loop"
+    return 0
+  fi
+
+  return 1
+}
+
+swap_is_active() {
+  target=$(swap_target_for_swapfile || true)
+  [ -n "$target" ]
+}
+
+disable_swapfile_swap() {
+  target=$(swap_target_for_swapfile || true)
+  if [ -n "$target" ]; then
+    if ! swapoff "$target" >> "$LOG" 2>&1; then
+      log "failed to disable active swap target=$target"
+      return 1
+    fi
+    log "disabled active swap target=$target"
+  fi
+
+  loop=$(loop_for_swapfile || true)
+  if [ -n "$loop" ]; then
+    if ! losetup -d "$loop" >> "$LOG" 2>&1; then
+      log "failed to detach loop device: $loop"
+      return 1
+    fi
+    log "detached loop device: $loop"
+  fi
+
+  return 0
+}
+
+enable_disk_based_swap() {
+  if [ -w /proc/sys/vm/disk_based_swap ]; then
+    if printf '1\n' > /proc/sys/vm/disk_based_swap; then
+      log "enabled /proc/sys/vm/disk_based_swap"
+    else
+      log "failed to enable /proc/sys/vm/disk_based_swap"
+    fi
+  fi
 }
 
 free_kib_for_data() {
@@ -95,7 +151,7 @@ create_swapfile() {
   size_bytes=$1
   size_mib=$(size_mib_for_bytes "$size_bytes")
 
-  swapoff "$SWAPFILE" 2>/dev/null || true
+  disable_swapfile_swap || return 1
   rm -f "$SWAPFILE"
 
   log "creating swapfile: path=$SWAPFILE size=${size_mib}MiB"
@@ -112,6 +168,42 @@ create_swapfile() {
   fi
 
   sync
+  return 0
+}
+
+activate_loop_swap() {
+  command -v losetup >/dev/null 2>&1 || {
+    log "losetup unavailable; loop device fallback cannot run"
+    return 1
+  }
+
+  loop=$(loop_for_swapfile || true)
+  if [ -z "$loop" ]; then
+    loop=$(losetup -f 2>> "$LOG" | awk 'NR == 1 { print $1; exit }')
+    if [ -z "$loop" ]; then
+      log "failed to find free loop device"
+      return 1
+    fi
+
+    if ! losetup "$loop" "$SWAPFILE" >> "$LOG" 2>&1; then
+      log "failed to attach swapfile to loop device: $loop"
+      return 1
+    fi
+  fi
+
+  if ! mkswap "$loop" >> "$LOG" 2>&1; then
+    log "mkswap failed for loop device: $loop"
+    losetup -d "$loop" >> "$LOG" 2>&1 || true
+    return 1
+  fi
+
+  if ! swapon -p "$SWAP_PRIORITY" "$loop" >> "$LOG" 2>&1; then
+    log "loop swapon failed: target=$loop"
+    losetup -d "$loop" >> "$LOG" 2>&1 || true
+    return 1
+  fi
+
+  log "swapfile configured through loop device: path=$SWAPFILE target=$loop size=${size_bytes} priority=${SWAP_PRIORITY}"
   return 0
 }
 
@@ -138,10 +230,13 @@ if ! mkswap "$SWAPFILE" >> "$LOG" 2>&1; then
   exit 0
 fi
 
-if ! swapon -p "$SWAP_PRIORITY" "$SWAPFILE" >> "$LOG" 2>&1; then
-  log "swapon failed"
+enable_disk_based_swap
+
+if swapon -p "$SWAP_PRIORITY" "$SWAPFILE" >> "$LOG" 2>&1; then
+  log "swapfile configured: path=$SWAPFILE size=${size_bytes} priority=${SWAP_PRIORITY}"
   exit 0
 fi
 
-log "swapfile configured: path=$SWAPFILE size=${size_bytes} priority=${SWAP_PRIORITY}"
+log "direct swapon failed; trying loop device fallback"
+activate_loop_swap || log "swapon failed"
 exit 0

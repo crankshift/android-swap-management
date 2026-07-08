@@ -79,6 +79,7 @@ assert_file "$MODDIR/service.sh"
 assert_file "$MODDIR/uninstall.sh"
 assert_file "$MODDIR/customize.sh"
 assert_file "$MODDIR/README.md"
+assert_file "$MODDIR/webroot/index.html"
 assert_file "$MODDIR/META-INF/com/google/android/update-binary"
 assert_file "$MODDIR/META-INF/com/google/android/updater-script"
 
@@ -100,6 +101,10 @@ assert_not_contains "$MODDIR/service.sh" "could not parse free space for /data; 
 assert_contains "$MODDIR/service.sh" "dd if=/dev/zero"
 assert_contains "$MODDIR/service.sh" 'mkswap "$SWAPFILE"'
 assert_contains "$MODDIR/service.sh" 'swapon -p "$SWAP_PRIORITY" "$SWAPFILE"'
+assert_contains "$MODDIR/service.sh" "/proc/sys/vm/disk_based_swap"
+assert_contains "$MODDIR/service.sh" "losetup -j"
+assert_contains "$MODDIR/service.sh" "losetup -f"
+assert_contains "$MODDIR/service.sh" "direct swapon failed; trying loop device fallback"
 assert_contains "$MODDIR/service.sh" "/data/local/tmp/android-swap-management.log"
 assert_not_contains "$MODDIR/service.sh" "/sys/block/zram0"
 assert_not_contains "$MODDIR/service.sh" "/dev/zram0"
@@ -107,6 +112,8 @@ assert_not_contains "$MODDIR/service.sh" "ZRAM_SYS"
 
 assert_contains "$MODDIR/uninstall.sh" "SWAPFILE=/data/local/tmp/swapfile"
 assert_contains "$MODDIR/uninstall.sh" 'swapoff "$SWAPFILE"'
+assert_contains "$MODDIR/uninstall.sh" "losetup -j"
+assert_contains "$MODDIR/uninstall.sh" "losetup -d"
 assert_contains "$MODDIR/uninstall.sh" 'rm -f "$SWAPFILE"'
 assert_contains "$MODDIR/uninstall.sh" "/data/local/tmp/android-swap-management.log"
 
@@ -116,6 +123,7 @@ assert_contains "$MODDIR/META-INF/com/google/android/update-binary" "SIZE_16_BYT
 assert_contains "$MODDIR/META-INF/com/google/android/update-binary" "KEY_VOLUMEUP"
 assert_contains "$MODDIR/META-INF/com/google/android/update-binary" "KEY_VOLUMEDOWN"
 assert_contains "$MODDIR/META-INF/com/google/android/update-binary" "swap_size.conf"
+assert_contains "$MODDIR/META-INF/com/google/android/update-binary" "webroot/*"
 assert_contains "$MODDIR/META-INF/com/google/android/update-binary" "Selected swapfile size"
 assert_not_contains "$MODDIR/META-INF/com/google/android/update-binary" "ZRAM"
 
@@ -131,6 +139,16 @@ assert_not_contains "$MODDIR/customize.sh" "ZRAM"
 assert_contains "$MODDIR/README.md" "Android Swap Management"
 assert_contains "$MODDIR/README.md" "/data/local/tmp/swapfile"
 assert_contains "$MODDIR/README.md" "cat /proc/swaps"
+assert_contains "$MODDIR/README.md" "Open WebUI"
+
+assert_contains "$MODDIR/webroot/index.html" "Android Swap Management"
+assert_contains "$MODDIR/webroot/index.html" "data-size=\"8589934592\""
+assert_contains "$MODDIR/webroot/index.html" "data-size=\"17179869184\""
+assert_contains "$MODDIR/webroot/index.html" "ksu.exec"
+assert_contains "$MODDIR/webroot/index.html" "service.sh"
+assert_contains "$MODDIR/webroot/index.html" "/proc/swaps"
+assert_contains "$MODDIR/webroot/index.html" "/data/local/tmp/android-swap-management.log"
+assert_not_contains "$MODDIR/webroot/index.html" "ZRAM"
 
 sh -n "$ROOT/scripts/build.sh"
 sh -n "$MODDIR/service.sh"
@@ -143,6 +161,7 @@ unzip -l "$ZIP" | grep -Fq "module.prop" || fail "zip missing module.prop"
 unzip -l "$ZIP" | grep -Fq "service.sh" || fail "zip missing service.sh"
 unzip -l "$ZIP" | grep -Fq "uninstall.sh" || fail "zip missing uninstall.sh"
 unzip -l "$ZIP" | grep -Fq "customize.sh" || fail "zip missing customize.sh"
+unzip -l "$ZIP" | grep -Fq "webroot/index.html" || fail "zip missing webroot/index.html"
 unzip -l "$ZIP" | grep -Fq "README.md" || fail "zip missing README.md"
 unzip -l "$ZIP" | grep -Fq "META-INF/com/google/android/update-binary" || fail "zip missing update-binary"
 

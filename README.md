@@ -6,8 +6,10 @@ Magisk/KernelSU module that creates and enables a configurable Android swapfile 
 
 - Creates a real storage-backed swapfile on `/data`.
 - Lets you choose 8 GiB or 16 GiB during installation.
+- Provides a module WebUI for changing the selected size after installation.
 - Defaults to 8 GiB when no volume key is pressed.
 - Runs `mkswap` and enables the swapfile with high priority at boot.
+- Falls back to a loop device when the ROM rejects direct swapfile activation.
 - Writes a boot log to `/data/local/tmp/android-swap-management.log`.
 - Leaves ROM/system zram alone.
 
@@ -31,6 +33,10 @@ Download the latest `android-swap-management-*.zip` from the GitHub Releases pag
 4. If no key is pressed, the module defaults to 8 GiB.
 5. Reboot.
 
+## WebUI
+
+In KernelSU/APatch/MMRL-style managers that support module WebUI, open Android Swap Management from the module details screen. The WebUI shows `/proc/swaps`, the module log, and lets you switch between 8 GiB and 16 GiB.
+
 ## Verify
 
 Run these commands as root after reboot:
@@ -41,7 +47,7 @@ free -h
 cat /data/local/tmp/android-swap-management.log
 ```
 
-You should see `/data/local/tmp/swapfile` active with the selected size.
+You should see `/data/local/tmp/swapfile` active with the selected size. If direct swapfiles are rejected on your ROM, `/proc/swaps` may show a loop device instead; the backing file is still `/data/local/tmp/swapfile`.
 
 ## Build From Source
 
