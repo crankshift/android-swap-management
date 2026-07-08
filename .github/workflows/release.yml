@@ -31,7 +31,7 @@ jobs:
         run: |
           set -eu
           tag="${GITHUB_REF_NAME}"
-          zip_file=$(find dist -maxdepth 1 -name 'oneplus15-zram-8gb-*.zip' -print -quit)
+          zip_file=$(find dist -maxdepth 1 -name 'android-swap-management-*.zip' -print -quit)
 
           if [ -z "$zip_file" ]; then
             echo "No release ZIP found in dist/" >&2

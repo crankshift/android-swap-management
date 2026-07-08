@@ -2,7 +2,7 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-MODDIR="$ROOT/oneplus15-zram-8gb"
+MODDIR="$ROOT/android-swap-management"
 PROP="$MODDIR/module.prop"
 DIST="$ROOT/dist"
 
@@ -17,7 +17,7 @@ command -v zip >/dev/null 2>&1 || fail "zip command not found"
 VERSION=$(awk -F= '$1 == "version" { print $2; exit }' "$PROP")
 [ -n "$VERSION" ] || fail "missing version in module.prop"
 
-OUT="$DIST/oneplus15-zram-8gb-$VERSION.zip"
+OUT="$DIST/android-swap-management-$VERSION.zip"
 
 mkdir -p "$DIST"
 rm -f "$OUT"
