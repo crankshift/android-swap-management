@@ -1,6 +1,0 @@
-id=oneplus15-zram-8gb
-name=OnePlus 15 ZRAM 8GB
-version=v1.0
-versionCode=1
-author=crankshift
-description=Configures zram0 to 8 GiB, lz4 compression, and swappiness 100 at boot for Magisk/KernelSU.

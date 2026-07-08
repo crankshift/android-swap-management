@@ -1,0 +1,6 @@
+id=android-swap-management
+name=Android Swap Management
+version=v1.0
+versionCode=1
+author=crankshift
+description=Creates and enables a configurable swapfile at /data/local/tmp/swapfile for Magisk/KernelSU.

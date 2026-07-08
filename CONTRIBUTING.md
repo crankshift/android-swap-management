@@ -1,22 +1,28 @@
 # Contributing
 
-Contributions are welcome when they keep the module small, reviewable, and focused on the OnePlus 15 ZRAM configuration.
+Thanks for helping improve Android Swap Management.
 
-## Before Opening a Pull Request
+## Development
 
-Run:
+- Keep runtime changes in `android-swap-management/` minimal and easy to audit.
+- The module manages only `/data/local/tmp/swapfile`.
+- Do not reintroduce zram management or change ROM/system zram behavior.
+- Update `android-swap-management/module.prop` when preparing a versioned release.
+- Keep `README.md` and `android-swap-management/README.md` aligned with behavior changes.
+
+## Validate
+
+Run the local validation command before opening a pull request:
 
 ```sh
 ./scripts/build.sh
 ./tests/validate_module.sh
 ```
 
-The validation script checks the module source, repository metadata, release workflow, and generated ZIP contents.
+The validation script checks required repository files, module metadata, shell syntax, and generated ZIP structure.
 
-## Guidelines
+## Pull Requests
 
-- Keep runtime changes in `oneplus15-zram-8gb/` minimal and easy to audit.
-- Do not change the target zram size, compression preference, or swappiness without explaining the reason.
-- Update `oneplus15-zram-8gb/module.prop` when preparing a versioned release.
-- Update `README.md` when behavior or user instructions change.
-- Do not commit generated ZIP files; use `./scripts/build.sh` to create local artifacts under `dist/`.
+- Explain the behavior change and why it is needed.
+- Include validation output in the pull request description.
+- Avoid unrelated formatting churn.
