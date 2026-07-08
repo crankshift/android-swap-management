@@ -28,6 +28,7 @@ The new module will:
 - Enable the swapfile on boot with high priority.
 - Remove the swapfile during uninstall.
 - Avoid OnePlus-specific runtime assumptions.
+- Include a concise root `AGENTS.md` file for future AI agents working in this repository.
 
 The new module will not:
 
@@ -85,12 +86,25 @@ Documentation should state that the module is tested on OnePlus 15 / Lineage-bas
 
 The README should warn about storage use, performance cost, thermals, and flash wear.
 
+## Agent Guidance
+
+Add a small root `AGENTS.md` file.
+
+It should tell future AI agents:
+
+- This repository builds a Magisk/KernelSU module named `Android Swap Management`.
+- The module manages only `/data/local/tmp/swapfile`.
+- Agents must not reintroduce zram management.
+- Agents should run `./scripts/build.sh` and `./tests/validate_module.sh` before claiming changes are complete.
+- Runtime files belong in `android-swap-management/`.
+
 ## Build And Validation
 
 The build script should generate `dist/android-swap-management-<version>.zip`.
 
 Validation should check:
 
+- Root `AGENTS.md` exists and mentions not reintroducing zram management.
 - Module metadata uses `android-swap-management` and `Android Swap Management`.
 - Runtime scripts contain `/data/local/tmp/swapfile`.
 - Runtime scripts no longer contain zram management paths such as `/sys/block/zram0` or `/dev/zram0`.
