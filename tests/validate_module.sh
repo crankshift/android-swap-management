@@ -91,6 +91,11 @@ assert_contains "$MODDIR/service.sh" "SWAPFILE=/data/local/tmp/swapfile"
 assert_contains "$MODDIR/service.sh" 'CONF=$MODDIR/swap_size.conf'
 assert_contains "$MODDIR/service.sh" "DEFAULT_SIZE_BYTES=8589934592"
 assert_contains "$MODDIR/service.sh" "SIZE_16_BYTES=17179869184"
+assert_contains "$MODDIR/service.sh" "reusable_kib"
+assert_contains "$MODDIR/service.sh" 'available_kib=$(( free_kib + reusable_kib ))'
+assert_contains "$MODDIR/service.sh" 'ensure_space "$size_bytes" "$current_size"'
+assert_contains "$MODDIR/service.sh" "could not parse free space for /data; skipping swapfile creation"
+assert_not_contains "$MODDIR/service.sh" "could not parse free space for /data; continuing"
 assert_contains "$MODDIR/service.sh" "dd if=/dev/zero"
 assert_contains "$MODDIR/service.sh" 'mkswap "$SWAPFILE"'
 assert_contains "$MODDIR/service.sh" 'swapon -p "$SWAP_PRIORITY" "$SWAPFILE"'

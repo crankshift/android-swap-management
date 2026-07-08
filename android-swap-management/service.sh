@@ -60,19 +60,31 @@ free_kib_for_data() {
 
 ensure_space() {
   size_bytes=$1
+  current_size=$2
   size_kib=$(( (size_bytes + 1023) / 1024 ))
   required_kib=$(( size_kib + RESERVE_KIB ))
   free_kib=$(free_kib_for_data)
 
   case "$free_kib" in
     ''|*[!0-9]*)
-      log "could not parse free space for /data; continuing"
-      return 0
+      log "could not parse free space for /data; skipping swapfile creation"
+      return 1
       ;;
   esac
 
-  if [ "$free_kib" -lt "$required_kib" ]; then
-    log "not enough free space on /data: free=${free_kib}KiB required=${required_kib}KiB"
+  case "$current_size" in
+    ''|*[!0-9]*)
+      reusable_kib=0
+      ;;
+    *)
+      reusable_kib=$(( (current_size + 1023) / 1024 ))
+      ;;
+  esac
+
+  available_kib=$(( free_kib + reusable_kib ))
+
+  if [ "$available_kib" -lt "$required_kib" ]; then
+    log "not enough free space on /data: free=${free_kib}KiB reusable=${reusable_kib}KiB required=${required_kib}KiB"
     return 1
   fi
 
@@ -112,7 +124,7 @@ if swap_is_active && [ "$current_size" = "$size_bytes" ]; then
 fi
 
 if [ "$current_size" != "$size_bytes" ]; then
-  ensure_space "$size_bytes" || exit 0
+  ensure_space "$size_bytes" "$current_size" || exit 0
   create_swapfile "$size_bytes" || exit 0
 else
   chmod 0600 "$SWAPFILE" || {
