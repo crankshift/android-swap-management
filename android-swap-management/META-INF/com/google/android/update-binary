@@ -1,8 +1,11 @@
 #!/sbin/sh
 OUTFD=$2
 ZIPFILE=$3
-MODID=oneplus15-zram-8gb
+MODID=android-swap-management
 MODPATH=/data/adb/modules/$MODID
+CONF=swap_size.conf
+SIZE_8_BYTES=8589934592
+SIZE_16_BYTES=17179869184
 
 ui_print() {
   if [ -n "$OUTFD" ]; then
@@ -18,8 +21,50 @@ abort() {
   exit 1
 }
 
-ui_print "- Installing OnePlus 15 ZRAM 8GB"
+read_volume_key() {
+  command -v getevent >/dev/null 2>&1 || return 1
+  command -v timeout >/dev/null 2>&1 || return 1
+
+  timeout 10 getevent -ql 2>/dev/null | while IFS= read -r line; do
+    case "$line" in
+      *KEY_VOLUMEUP*DOWN*)
+        printf '%s\n' up
+        exit 0
+        ;;
+      *KEY_VOLUMEDOWN*DOWN*)
+        printf '%s\n' down
+        exit 0
+        ;;
+    esac
+  done
+}
+
+choose_swap_size() {
+  key=$(read_volume_key || true)
+
+  case "$key" in
+    up)
+      SWAP_SIZE_BYTES=$SIZE_8_BYTES
+      SWAP_SIZE_LABEL="8 GiB"
+      ;;
+    down)
+      SWAP_SIZE_BYTES=$SIZE_16_BYTES
+      SWAP_SIZE_LABEL="16 GiB"
+      ;;
+    *)
+      SWAP_SIZE_BYTES=$SIZE_8_BYTES
+      SWAP_SIZE_LABEL="8 GiB"
+      ;;
+  esac
+}
+
+ui_print "- Installing Android Swap Management"
 ui_print "- Author: crankshift"
+ui_print "- Volume Up: 8 GiB swapfile"
+ui_print "- Volume Down: 16 GiB swapfile"
+ui_print "- Waiting 10 seconds; default is 8 GiB"
+
+choose_swap_size
 
 [ -d /data/adb/modules ] || abort "/data/adb/modules not found. Install from Magisk or KernelSU Manager."
 
@@ -28,11 +73,12 @@ mkdir -p "$MODPATH" || abort "Failed to create module directory"
 
 unzip -o "$ZIPFILE" 'module.prop' 'skip_mount' 'service.sh' 'uninstall.sh' 'README.md' -d "$MODPATH" >/dev/null || abort "Failed to extract module files"
 
-chmod 0644 "$MODPATH/module.prop" "$MODPATH/skip_mount" "$MODPATH/README.md"
+printf '%s\n' "$SWAP_SIZE_BYTES" > "$MODPATH/$CONF" || abort "Failed to write swap size config"
+
+chmod 0644 "$MODPATH/module.prop" "$MODPATH/skip_mount" "$MODPATH/README.md" "$MODPATH/$CONF"
 chmod 0755 "$MODPATH/service.sh" "$MODPATH/uninstall.sh"
 
-ui_print "- ZRAM size: 8192 MiB"
-ui_print "- Compression: lz4 when supported"
-ui_print "- Swappiness: 100"
+ui_print "- Selected swapfile size: $SWAP_SIZE_LABEL"
+ui_print "- Swapfile path: /data/local/tmp/swapfile"
 ui_print "- Reboot to apply"
 exit 0
